@@ -25,30 +25,31 @@ jobs:
       - name: Configurar versión de Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'  # Usando Python 3.10
+          python-version: '3.10'
 
       - name: Actualizar pip y herramientas de construcción
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
-      - name: Crear y activar entorno virtual
+      - name: Crear entorno virtual e instalar dependencias
         run: |
           python -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-
-      - name: Instalar dependencias de Python
-        run: |
-          source venv/bin/activate
-          pip install -r requirements.txt --verbose
+          venv/bin/python -m pip install --upgrade pip setuptools wheel
+          venv/bin/python -m pip install -r requirements.txt --verbose
 
       - name: Verificar instalación de pyodbc
         run: |
-          source venv/bin/activate
-          python -c "import pyodbc; print(pyodbc.version)"
+          venv/bin/python -c "import pyodbc; print(pyodbc.version)"
+
+      - name: Ejecutar pruebas
+        run: |
+          venv/bin/python -m unittest discover
+
+      - name: Verificar contenido del directorio
+        run: ls -la
 
       - name: Empaquetar artefacto para despliegue
-        run: zip -r release.zip ./* -x "venv/*"
+        run: zip -r release.zip ./* -x "venv/*" "*.git/*" "*.github/*" "tests/*"
 
       - name: Subir artefacto para trabajos de despliegue
         uses: actions/upload-artifact@v4
@@ -74,6 +75,10 @@ jobs:
       - name: Descomprimir artefacto para despliegue
         run: unzip release.zip
 
+      - name: Verificar conexión con Azure Web App
+        run: |
+          az webapp show --name 'stocks' --resource-group 'YourResourceGroupName' --subscription ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
+
       - name: Iniciar sesión en Azure
         uses: azure/login@v2
         with:
@@ -87,3 +92,7 @@ jobs:
         with:
           app-name: 'stocks'
           slot-name: 'Production'
+
+      - name: Notificación de estado
+        if: failure() || success()
+        run: echo "El workflow finalizó con el estado ${{ job.status }}"
