@@ -9,13 +9,13 @@ charset-normalizer==3.4.0
 click==8.1.7
 contourpy==1.3.1
 cycler==0.12.1
-email-validator==1.3.1  # Versión añadida
+email-validator==1.3.1  # Eliminada la duplicación
 Flask-Cors==3.0.10
-flask-admin==1.6.1
+flask-admin==1.6.1  # Versión corregida
 Flask-Bcrypt==1.0.1
 Flask-Caching==2.3.0
 Flask-Login==0.6.3
-Flask-Mail==0.9.1  # Versión añadida
+Flask-Mail==0.9.1
 Flask-Migrate==4.0.7
 Flask-SQLAlchemy==3.1.1
 fonttools==4.55.0
@@ -33,11 +33,11 @@ MarkupSafe==3.0.2
 matplotlib==3.9.2
 multitasking==0.0.11
 mysql-connector-python==9.1.0
-numpy==1.24.3  # Verificar versión correcta
+numpy==1.24.3  # Versión corregida
 outcome==1.3.0.post0
-pyodbc==4.0.35  # Confirmada
+pyodbc==4.0.35
 packaging==24.2
-pandas==2.2.3  # Verificar versión correcta
+pandas==1.5.3  # Versión corregida
 pillow==11.0.0
 platformdirs==4.3.6
 pyparsing==3.2.0
