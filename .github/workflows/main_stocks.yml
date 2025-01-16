@@ -1,4 +1,3 @@
-# GitHub Actions: Deploy Python app to Azure Web App - stocks
 name: Build and deploy Python app to Azure Web App - stocks
 
 on:
@@ -22,8 +21,6 @@ jobs:
         run: docker build -t my-python-app .
 
       - name: Save Docker image as artifact
-        run: |
-          docker save my-python-app | gzip > my-python-app.tar.gz
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
@@ -32,6 +29,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     steps:
       - name: Download Docker image artifact
         uses: actions/download-artifact@v4
@@ -57,5 +55,4 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Notify deployment status
-        run: echo "The workflow finished with status: ${{ job.status }}"
+     
