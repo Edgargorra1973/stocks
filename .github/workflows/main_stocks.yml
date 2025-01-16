@@ -14,11 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Remove conflicting packages
-        run: |
-          sudo apt-get remove -y containerd containerd.io docker docker-engine docker.io
-          sudo apt-get autoremove -y
-
       - name: Install Docker
         run: |
           sudo apt-get update
@@ -65,7 +60,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
       - name: Deploy Docker container to Azure Web App
-        uses: azure/webapps-container-deploy@v2
+        uses: Azure/webapps-deploy@v1
         with:
           app-name: 'stocks'
           images: my-python-app:latest
@@ -73,4 +68,5 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      
+      - name: Notify deployment status
+        run: echo "The workflow finished successfully."
