@@ -17,12 +17,12 @@ jobs:
       - name: Instalar dependencias del sistema
         run: |
           sudo apt-get update
-          sudo apt-get install -y unixodbc unixodbc-dev build-essential python3.11-dev python3.11-distutils
+          sudo apt-get install -y unixodbc unixodbc-dev build-essential python3.10-dev python3-distutils
 
       - name: Configurar versión de Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'  # Cambiado a Python 3.11
+            python-version: '3.11'  # Cambiado a Python 3.11
 
       - name: Actualizar pip y herramientas de construcción
         run: |
