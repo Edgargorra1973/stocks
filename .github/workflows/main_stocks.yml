@@ -21,6 +21,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y unixodbc-dev g++
+          which odbcinst || echo "odbcinst not found"
 
       - name: Set up Python version
         uses: actions/setup-python@v5
