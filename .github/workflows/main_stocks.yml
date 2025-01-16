@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
+# GitHub Actions: Deploy Python app to Azure Web App - stocks
 name: Build and deploy Python app to Azure Web App - stocks
 
 on:
@@ -17,11 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Instalar dependencias del sistema necesarias para pyodbc
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y unixodbc-dev g++
-          which odbcinst || echo "odbcinst not found"
+          sudo apt-get install -y unixodbc-dev g++ libpq-dev
 
       - name: Set up Python version
         uses: actions/setup-python@v5
@@ -72,7 +69,7 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
