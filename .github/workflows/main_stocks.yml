@@ -48,11 +48,15 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
-      - name: Deploy Docker container to Azure Web App
+           - name: Deploy Docker container to Azure Web App
         uses: azure/webapps-container-deploy@v2
         with:
           app-name: 'stocks'
           images: my-python-app:latest
+          registry-url: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
 
       - name: Notify deployment status
         run: echo "The workflow finished with status: ${{ job.status }}"
