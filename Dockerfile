@@ -1,20 +1,27 @@
 FROM ubuntu:20.04
 
-# Configurar variables de entorno para evitar preguntas interactivas durante la instalación
+# Configurar variable para evitar preguntas interactivas durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Actualizar y instalar dependencias del sistema
+# Actualizar repositorios, agregar PPA y preparar el entorno
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
-    unixodbc \
-    unixodbc-dev \
-    build-essential \
+    apt-transport-https \
+    ca-certificates \
     curl \
+    gnupg \
+    software-properties-common && \
+    curl -fsSL https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3B4FE6ACC0B21F32 | gpg --dearmor -o /usr/share/keyrings/ubuntu-archive-keyring.gpg && \
+    add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
     python3.10 \
     python3.10-venv \
     python3.10-dev \
     python3-distutils \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    unixodbc \
+    unixodbc-dev \
+    build-essential && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Establecer Python 3.10 como predeterminado
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
@@ -22,23 +29,23 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
 # Instalar pip
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
 
-# Crear un directorio de trabajo
+# Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos necesarios para el contenedor (ajusta si necesitas más o menos)
+# Copiar dependencias
 COPY requirements.txt /app/
 
-# Instalar las dependencias de Python
+# Instalar dependencias de Python
 RUN python3 -m venv venv && \
     . venv/bin/activate && \
     pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Copiar el resto de la aplicación al contenedor
+# Copiar la aplicación
 COPY . /app
 
-# Exponer el puerto en el que se ejecutará tu aplicación
+# Exponer el puerto
 EXPOSE 5000
 
-# Comando de inicio para la aplicación (ajusta según el framework usado, por ejemplo, Flask)
+# Comando para iniciar la aplicación
 CMD ["/app/venv/bin/python", "app.py"]
