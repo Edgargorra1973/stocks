@@ -14,71 +14,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Habilitar repositorio universe
-        run: sudo add-apt-repository universe
+      # Construcción de imagen Docker
+      - name: Construir imagen Docker
+        run: docker build -t my-python-app .
 
-      - name: Instalar dependencias del sistema
+      # Opcional: Verificar que la imagen funciona localmente
+      - name: Probar contenedor Docker
+        run: docker run --rm my-python-app
+
+      # Crear un artefacto con la imagen Docker
+      - name: Guardar imagen Docker como artefacto
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unixodbc unixodbc-dev build-essential python3.10-dev python3-distutils
-
-      - name: Configurar versión de Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Actualizar pip y herramientas de construcción
-        run: |
-          python -m pip install --upgrade pip setuptools wheel
-
-      - name: Crear entorno virtual e instalar dependencias
-        run: |
-          python -m venv venv
-          venv/bin/python -m pip install --upgrade pip setuptools wheel
-          venv/bin/python -m pip install -r requirements.txt --verbose
-
-      - name: Verificar instalación de pyodbc
-        run: |
-          venv/bin/python -c "import pyodbc; print(pyodbc.version)"
-
-      - name: Ejecutar pruebas
-        run: |
-          venv/bin/python -m unittest discover
-
-      - name: Verificar contenido del directorio
-        run: ls -la
-
-      - name: Empaquetar artefacto para despliegue
-        run: zip -r release.zip ./* -x "venv/*" "*.git/*" "*.github/*" "tests/*"
-
-      - name: Subir artefacto para trabajos de despliegue
+          docker save my-python-app | gzip > my-python-app.tar.gz
         uses: actions/upload-artifact@v4
         with:
-          name: python-app
-          path: release.zip
+          name: docker-image
+          path: my-python-app.tar.gz
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     environment:
       name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-    permissions:
-      id-token: write
 
     steps:
       - name: Descargar artefacto del trabajo de build
         uses: actions/download-artifact@v4
         with:
-          name: python-app
+          name: docker-image
 
-      - name: Descomprimir artefacto para despliegue
-        run: unzip release.zip
-
-      - name: Verificar conexión con Azure Web App
+      - name: Cargar imagen Docker
         run: |
-          az webapp show --name 'stocks' --resource-group 'YourResourceGroupName' --subscription ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
+          gunzip < my-python-app.tar.gz | docker load
 
+      # Iniciar sesión en Azure para despliegue
       - name: Iniciar sesión en Azure
         uses: azure/login@v2
         with:
@@ -86,12 +55,12 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID }}
 
-      - name: Desplegar en Azure Web App
-        uses: azure/webapps-deploy@v3
-        id: deploy-to-webapp
+      # Subir la imagen a Azure Web App
+      - name: Desplegar contenedor en Azure Web App
+        uses: azure/webapps-container-deploy@v2
         with:
           app-name: 'stocks'
-          slot-name: 'Production'
+          images: my-python-app:latest
 
       - name: Notificación de estado
         if: failure() || success()
