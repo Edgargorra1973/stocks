@@ -22,9 +22,9 @@ jobs:
       - name: Configurar versión de Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'  # Asegúrate de que esta versión sea compatible con todas las dependencias
+          python-version: '3.11'  # Cambiado a Python 3.11
 
-      - name: Actualizar pip y setuptools
+      - name: Actualizar pip y herramientas de construcción
         run: |
           python -m pip install --upgrade pip setuptools wheel
 
