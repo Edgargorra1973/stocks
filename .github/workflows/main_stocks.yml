@@ -55,5 +55,4 @@ jobs:
           images: my-python-app:latest
 
       - name: Notify deployment status
-        if: failure() || success()
         run: echo "The workflow finished with status: ${{ job.status }}"
