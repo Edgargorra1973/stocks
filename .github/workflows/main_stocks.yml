@@ -22,6 +22,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unixodbc-dev g++
+
       - name: Create and start virtual environment
         run: |
           python -m venv venv
@@ -61,7 +66,6 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -75,4 +79,3 @@ jobs:
         with:
           app-name: 'stocks'
           slot-name: 'Production'
-          
