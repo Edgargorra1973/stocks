@@ -1,0 +1,33 @@
+<!-- templates/dashboard.html -->
+
+{% extends "base.html" %}
+
+{% block title %}<div class="welcome">
+    <h1>Panel de Control</h1>
+</div>
+
+<div class="main-container">
+    <!-- Rectángulo grande -->
+    <div class="main-rect" id="main-content">
+        <h2>Gráfico Principal</h2>
+        <p>Este es el contenido inicial.</p>
+    </div>
+
+    <!-- Rectángulos pequeños -->
+    <div class="small-rect-container">
+        <div class="small-rect active" data-content="contenido1">
+            <p>Gráfico 1</p>
+        </div>
+        <div class="small-rect" data-content="contenido2">
+            <p>Gráfico 2</p>
+        </div>
+        <div class="small-rect" data-content="contenido3">
+            <p>Gráfico 3</p>
+        </div>
+    </div>
+</div>{% endblock %}
+
+{% block content %}
+
+
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Página de Inicio{% endblock %}
+
+{% block content %}
+<main>
+    <div class="welcome">
+        <h1>Bienvenido a Nuestra Web</h1>
+        <p>Explora nuestras funcionalidades y disfruta de una experiencia única.</p>
+    </div>
+</main>
+
+<!-- Modal de Iniciar Sesión -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeLogin">&times;</span>
+        <h2>Iniciar Sesión</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('index') }}">
+            {{ login_form.hidden_tag() }}
+            <label for="email_or_username">Email o Usuario:</label><br>
+            {{ login_form.email_or_username(class="form-input", size=32) }}<br><br>
+            
+            <label for="password">Contraseña:</label><br>
+            {{ login_form.password(class="form-input", size=32) }}<br><br>
+            
+            {{ login_form.submit(class="btn btn-login") }}
+        </form>
+        <p>¿No tienes una cuenta? <a href="#" id="openSignupFromLogin">Regístrate aquí</a>.</p>
+    </div>
+</div>
+
+<!-- Modal de Registrarse -->
+<div id="signupModal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="closeSignup">&times;</span>
+        <h2>Registrarse</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('index') }}">
+            {{ signup_form.hidden_tag() }}
+            <label for="username">Usuario:</label><br>
+            {{ signup_form.username(class="form-input", size=32) }}<br><br>
+            
+            <label for="email">Email:</label><br>
+            {{ signup_form.email(class="form-input", size=32) }}<br><br>
+            
+            <label for="password">Contraseña:</label><br>
+            {{ signup_form.password(class="form-input", size=32) }}<br><br>
+            
+            {{ signup_form.submit(class="btn btn-signup") }}
+        </form>
+        <p>¿Ya tienes una cuenta? <a href="#" id="openLoginFromSignup">Inicia sesión aquí</a>.</p>
+    </div>
+</div>
+{% endblock %}

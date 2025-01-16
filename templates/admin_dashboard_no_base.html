@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard Independiente</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='Style/style.css') }}">
+    <style>
+        /* Estilo para ocultar inicialmente las tablas internas */
+        .nested-table {
+            display: none;
+            margin-top: 10px;
+        }
+        /* Estilo para el campo de búsqueda */
+        .search-input {
+            margin-bottom: 15px;
+            max-width: 300px;
+        }
+        /* Estilo para el botón de borrar */
+        .btn-delete {
+            color: #fff;
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Panel de Administración (Independiente)</h1>
+
+        <!-- Sección para mostrar mensajes de flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Iterar sobre las tablas -->
+        <section>
+            {% for table, content in db_contents.items() %}
+                <div class="table-container">
+                    <h3 onclick="toggleTable('table-{{ table }}')">Tabla: {{ table }}</h3>
+                    <div id="table-{{ table }}" class="table-content">
+                        {% if table == 'datos_financieros' %}
+                            <!-- Campo de búsqueda para 'datos_financieros' -->
+                            <input type="text" id="search-symbol" class="form-control search-input" placeholder="Buscar por Símbolo...">
+                        {% endif %}
+                        <table class="table table-bordered table-striped" id="{{ table }}-table">
+                            <thead>
+                                <tr>
+                                    {% if table == 'datos_financieros' %}
+                                        <th>Símbolo</th> <!-- Nueva columna "Símbolo" al inicio -->
+                                    {% endif %}
+                                    {% for column in content.columns %}
+                                        <th>{{ column }}</th>
+                                    {% endfor %}
+                                    {% if table == 'companias' %}
+                                        <th>Borrar</th> <!-- Columna adicional para borrar -->
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            
+                            <tbody>
+                                {% for row in content.rows %}
+                                    <tr id="{{ table }}-row-{{ row['id'] }}">
+                                        {% if table == 'datos_financieros' %}
+                                            <td>
+                                                {% for compania in db_contents['companias']['rows'] %}
+                                                    {% if compania['id'] == row['compania_id'] %}
+                                                        {{ compania['simbolo'] }}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </td>
+                                        {% endif %}
+                                        {% for column in content.columns %}
+                                            <td>
+                                                {% if table == 'datos_financieros' and column == 'datos' %}
+                                                    {% set datos = row[column] | from_json %}
+                                                    {% if datos and 'headers' in datos and 'rows' in datos %}
+                                                        <!-- Botón para alternar la tabla interna -->
+                                                        <button class="btn btn-primary btn-sm" onclick="toggleNestedTable('nested-{{ table }}-{{ loop.index0 }}')">
+                                                            Abrir
+                                                        </button>
+                                                        <!-- Tabla interna ocultable -->
+                                                        <div id="nested-{{ table }}-{{ loop.index0 }}" class="nested-table table-responsive">
+                                                            <table class="table table-sm table-bordered mt-2">
+                                                                <thead>
+                                                                    <tr>
+                                                                        {% for sub_column in datos.headers %}
+                                                                            <th>{{ sub_column }}</th>
+                                                                        {% endfor %}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {% for data_row in datos.rows %}
+                                                                        <tr id="{{ table }}-{{ row['id'] }}-row-{{ loop.index0 }}">
+                                                                            {% for value in data_row %}
+                                                                                <td>{{ value }}</td>
+                                                                            {% endfor %}
+                                                                        </tr>
+                                                                    {% endfor %}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="text-muted">Sin datos disponibles</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {{ row[column] }}
+                                                {% endif %}
+                                            </td>
+                                        {% endfor %}
+                                        {% if table == 'companias' %}
+                                            <td>
+                                                <!-- Formulario para borrar la compañía -->
+                                                <form method="POST" action="{{ url_for('delete_company', company_id=row['id']) }}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta compañía y sus datos asociados?');">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-danger btn-sm btn-delete-compania">
+                                                        Borrar
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        </section>
+    </div>
+
+    <!-- Incluir dependencias de Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript para alternar visibilidad y filtrar -->
+    <script>
+        // Función para alternar la visibilidad de una tabla
+        function toggleTable(tableId) {
+            const tableContent = document.getElementById(tableId);
+            if (tableContent.style.display === "none" || tableContent.style.display === "") {
+                tableContent.style.display = "block"; // Mostrar tabla
+            } else {
+                tableContent.style.display = "none"; // Ocultar tabla
+            }
+        }
+
+        // Función para alternar la visibilidad de una tabla interna
+        function toggleNestedTable(nestedTableId) {
+    // Obtener todas las tablas internas visibles y botones visibles
+    const nestedTable = document.getElementById(nestedTableId);
+    const button = event.currentTarget;
+
+    const allNestedTables = document.querySelectorAll('.nested-table');
+    const allButtons = document.querySelectorAll('.btn-primary');
+
+    // Verificar si la tabla está abierta
+    const isTableOpen = nestedTable.style.display === "block";
+
+    // Cerrar todas las tablas internas y restaurar botones
+    allNestedTables.forEach(table => {
+        table.style.display = "none"; // Cerrar todas las tablas internas
+    });
+
+    allButtons.forEach(btn => {
+        btn.textContent = "Abrir"; // Restaurar texto de los botones
+    });
+
+    // Abrir la tabla seleccionada si estaba cerrada
+    if (!isTableOpen) {
+        nestedTable.style.display = "block"; // Mostrar tabla interna seleccionada
+        button.textContent = "Cerrar"; // Cambiar texto del botón seleccionado
+    }
+}
+
+
+
+        // Función para filtrar la tabla 'datos_financieros' por la columna 'Símbolo'
+        function filterDatosFinancieros() {
+    const input = document.getElementById('search-symbol');
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById('datos_financieros-table');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = tbody.getElementsByTagName('tr');
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const td = row.getElementsByTagName('td')[0]; // Columna "Símbolo" (índice 0)
+        const nestedTable = row.querySelector('.nested-table'); // Tabla interna
+        const button = row.querySelector('.btn-primary'); // Botón asociado
+
+        // Filtrar solo filas principales (ignorar tablas internas)
+        if (td) {
+            const txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                row.style.display = ""; // Mostrar la fila principal
+            } else {
+                row.style.display = "none"; // Ocultar la fila principal
+            }
+        }
+
+        // Asegurarse de cerrar tablas internas y restaurar botones al filtrar
+        if (nestedTable && row.style.display === "") {
+            nestedTable.style.display = "none"; // Cerrar tabla interna
+            if (button) {
+                button.textContent = "Abrir"; // Restaurar el texto del botón
+            }
+        }
+    }
+}
+
+
+        // Asignar eventos después de que el DOM se haya cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-symbol');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', filterDatosFinancieros);
+            }
+        });
+    </script>
+</body>
+</html>

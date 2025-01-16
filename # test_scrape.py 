@@ -1,0 +1,14 @@
+# test_scrape.py
+
+from your_flask_app_file import scrape_stock_price  # Reemplaza 'your_flask_app_file' con el nombre de tu archivo Flask
+
+def main():
+    simbolo = input("Ingrese el símbolo de la compañía para scraping: ").strip().lower()
+    precio = scrape_stock_price(simbolo)
+    if precio:
+        print(f"Precio actual de {simbolo.upper()}: {precio}")
+    else:
+        print(f"No se pudo obtener el precio para {simbolo.upper()}.")
+
+if __name__ == "__main__":
+    main()

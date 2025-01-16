@@ -1,0 +1,59 @@
+<!-- templates/admin_dashboard.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Panel de Administración{% endblock %}
+
+{% block content %}
+    <div class="admin-content">
+        <header class="admin-header">
+            <h1>Panel de Administración</h1>
+            <nav>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-back">Ir al Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-logout">Cerrar Sesión</a>
+            </nav>
+        </header>
+        <pre>{{ db_contents | tojson }}</pre>
+        <section>
+            
+            <h2>Tablas de la Base de Datos</h2>
+            {% for table, content in db_contents.items() %}
+    <div class="table-section">
+        <button class="toggle-table-btn" onclick="toggleTable('{{ table }}')">
+            {{ table }}
+        </button>
+        <div id="table-{{ table }}" class="table-container" style="display: none;">
+            <h3>Contenido de la tabla {{ table }}</h3>
+            {% if content.rows %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                {% for column in content.columns %}
+                                    <th>{{ column }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in content.rows %}
+                                <tr>
+                                    {% for column in content.columns %}
+                                        <td>{{ row[column] }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>No hay datos en esta tabla.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endfor %}
+
+        </section>
+    </div>
+
+    
+{% endblock %}

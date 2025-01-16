@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}AI Stocks{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Tus estilos personalizados -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='Style/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Barra de Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{{ url_for('dashboard') }}">AI Stocks.</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" 
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Formulario para buscar símbolo de la compañía -->
+            <form class="form-inline my-2 my-lg-0" method="GET" action="{{ url_for('search_company') }}">
+                <input class="form-control mr-sm-2" type="text" name="symbol" placeholder="Símbolo de la Compañía" required>
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Buscar</button>
+            </form>
+            <ul class="navbar-nav ml-auto">
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="navbar-text mr-3">
+                            ¡Bienvenido, {{ current_user.username }}!
+                        </span>
+                    </li>
+                    {% if current_user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin Dashboard</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Cerrar Sesión</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="openLogin">Iniciar Sesión</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="openSignup">Registrarse</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+    {# Si no se enviaron login_form o signup_form desde la vista, creamos variables vacías #}
+    {% if login_form is not defined %}
+        {% set login_form = None %}
+    {% endif %}
+    {% if signup_form is not defined %}
+        {% set signup_form = None %}
+    {% endif %}
+
+    <!-- MODALS: loginModal y signupModal -->
+    <div id="loginModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <!-- Botón para cerrar el modal de Login -->
+            <span id="closeLogin" class="close">&times;</span>
+            <!-- Formulario de inicio de sesión -->
+            {% if login_form %}
+                <form method="POST" action="{{ url_for('index') }}">
+                    {{ login_form.hidden_tag() }}
+                    <div class="form-group m-3">
+                        <label for="email_or_username">Email o Usuario</label>
+                        {{ login_form.email_or_username(class_="form-control") }}
+                    </div>
+                    <div class="form-group m-3">
+                        <label for="password">Contraseña</label>
+                        {{ login_form.password(class_="form-control") }}
+                    </div>
+                    <div class="m-3">
+                        {{ login_form.submit(class_="btn btn-primary") }}
+                    </div>
+                </form>
+            {% else %}
+                <div class="m-3">
+                    <p class="alert alert-warning">No hay <strong>login_form</strong> definido en el contexto.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="signupModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <!-- Botón para cerrar el modal de Signup -->
+            <span id="closeSignup" class="close">&times;</span>
+            <!-- Formulario de registro -->
+            {% if signup_form %}
+                <form method="POST" action="{{ url_for('index') }}">
+                    {{ signup_form.hidden_tag() }}
+                    <div class="form-group m-3">
+                        <label for="username">Usuario</label>
+                        {{ signup_form.username(class_="form-control") }}
+                    </div>
+                    <div class="form-group m-3">
+                        <label for="email">Email</label>
+                        {{ signup_form.email(class_="form-control") }}
+                    </div>
+                    <div class="form-group m-3">
+                        <label for="password">Contraseña</label>
+                        {{ signup_form.password(class_="form-control") }}
+                    </div>
+                    <div class="m-3">
+                        {{ signup_form.submit(class_="btn btn-success") }}
+                    </div>
+                </form>
+            {% else %}
+                <div class="m-3">
+                    <p class="alert alert-warning">No hay <strong>signup_form</strong> definido en el contexto.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- FIN MODALS -->
+    
+    <!-- Sección Comparativa (texto) -->
+    <div class="container mt-4">
+        <!-- Sección del nombre de la compañía -->
+        <div class="row text-center">
+            <div class="col-12 mb-4">
+                <h2 id="company-name" class="text-dark font-weight-bold">
+                    {{ company_name if company_name else 'Seleccione una compañía' }}
+                </h2>
+                <h2>
+                    <span id="score"></span> <span id="seguridadinversion"></span> 
+                </h2>
+                
+            </div>
+        </div>
+        
+        <!-- Valor Intrínseco y Precio Actual (solo texto) -->
+        <div class="row text-center align-items-center">
+            
+
+            <!-- Precio Actual (texto) -->
+            <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                <div class="p-4 border rounded shadow-sm bg-light">
+                    <h3 class="text-primary">Precio Actual</h3>
+                    <p id="current-price" class="display-4 text-danger font-weight-bold">
+                        {{ session.get('current_price', 'Cargando...') }}
+                    </p>
+                    
+                </div>
+            </div>
+            <!-- Valor Intrínseco (texto) -->
+            <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
+                <div class="p-4 border rounded shadow-sm bg-light">
+                    <h3 class="text-primary">Valor Intrínseco</h3>
+                    <p id="valor-intrinseco" class="display-4 text-primary font-weight-bold">N/A</p>
+                </div>
+                
+            </div>
+        </div>
+         <!-- (Opcional) Chart Container para Valor Intrínseco en caso de quererlo aquí -->
+        <div id="chart-container">
+            <canvas id="valorIntrinsecoChart"></canvas>
+        </div>
+        <!-- mensaje de inversio-->
+        <div id="mensaje-inversion" class="alert hidden" role="alert" style="display: none;">
+            <div class="mensaje-contenido">
+                <i id="mensaje-icono" class="fas"></i>
+                <span id="mensaje-texto"></span>
+            </div>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+
+    {% if not current_user.is_admin %}
+    <!-- BOTÓN PARA VER DETALLES -->
+   <div class="text-center mt-4">
+    <!-- Botón para abrir el modal -->
+    <a href="#" id="toggle-table-link" class="btn btn-info" data-simbolo="{{ simbolo|upper }}">
+        Ver Detalles de {{ simbolo|upper }}
+    </a>
+   
+</div>
+
+
+
+
+
+
+    {% endif %}
+        
+    <!-- SECCIÓN DETALLES: Tabla + 3 Gráficos -->
+    <!-- Se oculta por defecto y se mostrará al hacer clic en "Ver Detalles" -->
+     
+    <div id="evaluation-container" style="display: none;">
+        
+        <!-- Tabla de Evaluación -->
+        <div class="container mt-4">
+            
+          <div class="table-responsive" id="evaluation-table">
+              <table class="table table-bordered table-striped">
+                  <thead>
+                      <tr>
+                          <th>EPS Actual ($)</th>
+                          <th>Per Actual</th>
+                          <th>Per(5Y): Min / Med / Max</th>
+                          <th>Clasificación</th>
+                          <th>Ratios Financieros</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <tr>
+                          <td id="eps-actual">
+                              <span style="font-size: 1.2em; font-weight: bold;">
+                                {{ eps_actual if eps_actual is not none else 'N/A' }}
+                              </span>
+                          </td>
+                          <td id="per-actual">Cargando...</td>
+                          <td id="per-medio">
+                              <span id="per-min" style="color: #B8860B;">
+                                  {{ per_min if per_min is not none else 'N/A' }}
+                              </span> / 
+                              <span id="per-medio-value" style="color: blue; font-size: 1.2em; font-weight: bold;">
+                                  {{ per_medio_5y if per_medio_5y is not none else 'N/A' }}
+                              </span> / 
+                              <span id="per-max" style="color: red;">
+                                  {{ per_max if per_max is not none else 'N/A' }}
+                              </span>
+                        </td>
+                        <td id="clasificacion">
+                            <span>
+                                {{ clasificacion if clasificacion is not none else 'N/A' }}
+                            </span>     
+                        </td>
+                        <td>
+                            <a href="#" id="openRatiosModalButton" class="ratios-link no-underline">📊 Detalles</a>
+                                 <!-- Modal de Ratios Financieros -->
+                                <div class="modal-ratios" id="ratiosModal">
+                                     <div class="modal-ratios-content">
+                                         <span class="close-ratios" id="closeRatiosModal">&times;</span>
+                                <h5>Ratios Financieros</h5>
+                                             <div class="modal-body">
+                                                 <div class="table-responsive">
+                                 <!-- La tabla generada dinámicamente será insertada aquí -->
+                                                </div>
+                                             </div>
+                                     </div>
+                                </div>
+                        </td>
+                      </tr>
+                  </tbody>
+              </table>
+          </div>
+        </div>
+
+        <!-- GRÁFICO GRANDE (Proyección de Valor Intrínseco) -->
+         
+        <div class="container mt-5">
+            <h4 id="encabezado-cagr"></h4>
+          <canvas id="intrinsicValueChart" style="max-height: 300px;"></canvas>
+        </div>
+
+        <!-- DOS GRÁFICOS PEQUEÑOS (Trimestral y Anual) -->
+        <div class="container mt-5">
+          <div class="row">
+            <!-- EPS Trimestral -->
+            <div class="col-md-6 col-sm-12 mb-4">
+              <canvas id="QProjectionChart"></canvas>
+            </div>
+            <!-- Ventajas Competitivas-->
+            <div class="col-md-6 col-sm-12 mb-4">
+              <h4 class="text-center">Ventajas Competitivas</h4>
+              <canvas id="ventajaschart"></canvas>
+            </div>
+          </div>
+        </div>
+    </div>
+    <!-- FIN SECCIÓN DETALLES -->
+
+    <!-- Scripts: jQuery, Bootstrap, Chart.js, tu script principal... -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
+
+
+    <script src="{{ url_for('static', filename='scripts/scriptsratios.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/scripts.js') }}"></script>
+    
+    
+    
+    <!-- Script para mostrar/ocultar la sección de detalles -->
+   
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

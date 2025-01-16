@@ -1,0 +1,12 @@
+<!-- templates/signup_prompt.html -->
+{% extends "base.html" %}
+
+{% block title %}Inscríbete{% endblock %}
+
+{% block content %}
+    <div class="signup-prompt">
+        <h2>Has alcanzado el límite de búsquedas gratuitas.</h2>
+        <p>Inscríbete gratis para ver más compañías y acceder a más datos financieros.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Inscribirse Gratis</a>
+    </div>
+{% endblock %}
